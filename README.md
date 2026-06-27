@@ -1,8 +1,17 @@
 # Restate SDK for Laravel
 
 [![CI](https://github.com/qcodr/restate-sdk-laravel/actions/workflows/ci.yml/badge.svg)](https://github.com/qcodr/restate-sdk-laravel/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/qcodr/restate-sdk-laravel/branch/main/graph/badge.svg)](https://codecov.io/gh/qcodr/restate-sdk-laravel)
 [![PHPStan level max](https://img.shields.io/badge/PHPStan-level%20max-brightgreen.svg)](phpstan.neon)
+[![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fqcodr%2Frestate-sdk-laravel%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/qcodr/restate-sdk-laravel/main)
+[![Latest Stable Version](https://img.shields.io/packagist/v/qcodr/restate-sdk-laravel.svg)](https://packagist.org/packages/qcodr/restate-sdk-laravel)
+[![Total Downloads](https://img.shields.io/packagist/dt/qcodr/restate-sdk-laravel.svg)](https://packagist.org/packages/qcodr/restate-sdk-laravel)
+[![PHP Version](https://img.shields.io/packagist/php-v/qcodr/restate-sdk-laravel.svg)](https://packagist.org/packages/qcodr/restate-sdk-laravel)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+<!-- Code quality grade — connect the repo on https://app.codacy.com, then replace
+     CODACY_PROJECT_ID with the project id from the badge snippet and uncomment:
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/CODACY_PROJECT_ID)](https://app.codacy.com/gh/qcodr/restate-sdk-laravel/dashboard)
+-->
 
 Laravel integration for the [Restate PHP SDK](https://github.com/qcodr/restate-sdk-php) —
 **durable execution** (workflows, virtual objects, sagas, durable timers, exactly-once
