@@ -14,11 +14,10 @@
     },
     "testFramework": "phpunit",
     "tmpDir": "build/infection",
-    // Floors sit a few points below the achieved MSI (68% / covered 77%) so they gate
-    // regressions while tolerating run-to-run variance; raise them as coverage of the
-    // framework-glue (providers, commands) grows.
-    "minMsi": 64,
-    "minCoveredMsi": 73,
+    // Floors sit a few points below the achieved MSI (85% / covered 85%) so they gate
+    // regressions while tolerating run-to-run variance.
+    "minMsi": 80,
+    "minCoveredMsi": 82,
     "logs": {
         "text": "build/infection/infection.log",
         "html": "build/infection/infection.html",
