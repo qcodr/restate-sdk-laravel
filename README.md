@@ -126,6 +126,24 @@ php artisan restate:discover --json   # print the raw discovery manifest
 php artisan restate:serve             # serve over bidi HTTP/2 (amphp)
 ```
 
+## Use cases
+
+Worked, tested examples live under `tests/Examples/` (proven offline against the SDK —
+discovery, business logic, and the durable flow over a fake context) with copy-pasteable
+recipes:
+
+- **[Saga](docs/usecases/saga.md)** — an order-processing workflow (reserve inventory →
+  charge → ship) with automatic **compensation** on failure: a thin `#[Workflow]` over
+  injected, idempotent services. The proof drives a failing payment and asserts inventory
+  is released, shipping never runs, and a `TerminalException` surfaces.
+- **[Rate limiter](docs/usecases/rate-limiter.md)** — a per-key token bucket as a
+  `#[VirtualObject]`: single-writer state per key, no `lockForUpdate` / Redis race. The
+  proof drains one key while another stays full, showing per-key isolation.
+
+> Both surface a real SDK boundary: `JsonSerde` hands handlers the **decoded array**, not a
+> hydrated object, so a handler's input parameter is `array`/scalar and the value object is
+> built (and validated) inside the handler.
+
 ## Code quality
 
 Mirrors the SDK's strict gate, all offline:
