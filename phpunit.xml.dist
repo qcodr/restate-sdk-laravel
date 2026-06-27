@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         failOnRisky="true"
+         failOnWarning="true">
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+        <exclude>
+            <!-- Live server glue: ServeCommand blocks the process on a real amphp event
+                 loop (AmpStreamingServer), so it is verified by running the SDK's own
+                 conformance suite rather than unit tests. Mirrored in codecov.yml and
+                 infection.json5.dist. -->
+            <file>src/Console/ServeCommand.php</file>
+        </exclude>
+    </source>
+</phpunit>

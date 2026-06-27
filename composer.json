@@ -1,0 +1,67 @@
+{
+    "name": "qcodr/restate-sdk-laravel",
+    "description": "Laravel integration for the Restate PHP SDK — durable execution (workflows, virtual objects, sagas, durable timers) wired into Laravel's container, routing, and Artisan.",
+    "type": "library",
+    "license": "Apache-2.0",
+    "keywords": ["restate", "laravel", "durable-execution", "workflow", "saga", "virtual-object", "queue"],
+    "homepage": "https://github.com/qcodr/restate-sdk-laravel",
+    "require": {
+        "php": ">=8.2",
+        "qcodr/restate-sdk-php": "^0.2",
+        "illuminate/console": "^11.0 || ^12.0",
+        "illuminate/contracts": "^11.0 || ^12.0",
+        "illuminate/http": "^11.0 || ^12.0",
+        "illuminate/support": "^11.0 || ^12.0"
+    },
+    "require-dev": {
+        "amphp/http-server": "^3",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "infection/infection": "^0.29",
+        "larastan/larastan": "^3.0",
+        "orchestra/testbench": "^9.0 || ^10.0",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpunit/phpunit": "^11.0",
+        "vimeo/psalm": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Qcodr\\Restate\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Qcodr\\Restate\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Qcodr\\Restate\\Laravel\\RestateServiceProvider"
+            ],
+            "aliases": {
+                "Restate": "Qcodr\\Restate\\Laravel\\Facades\\Restate"
+            }
+        }
+    },
+    "scripts": {
+        "test": "phpunit --testsuite unit",
+        "test:unit": "phpunit --testsuite unit",
+        "stan": "phpstan analyse --no-progress",
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "sast": "psalm --taint-analysis --no-progress",
+        "infection": "infection --threads=max --no-progress",
+        "lint": ["@cs", "@stan"],
+        "check": ["@lint", "@sast", "@test:unit"]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "infection/extension-installer": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

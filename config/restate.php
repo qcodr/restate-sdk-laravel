@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Services
+    |--------------------------------------------------------------------------
+    |
+    | The Restate service / virtual-object / workflow classes exposed by this
+    | deployment. List their class names; each is resolved from the Laravel
+    | container, so handlers receive constructor dependency injection. The
+    | classes use the SDK attributes (#[Service], #[VirtualObject], #[Workflow]).
+    |
+    */
+    'services' => [
+        // App\Restate\GreeterService::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP route
+    |--------------------------------------------------------------------------
+    |
+    | The route prefix the Restate runtime calls for discovery and invocation.
+    | Register the deployment at <app-url>/<path>. Set `path` to null to disable
+    | the in-app HTTP route entirely (e.g. when serving via `restate:serve`).
+    |
+    */
+    'path' => env('RESTATE_PATH', 'restate'),
+    'middleware' => ['api'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Request identity
+    |--------------------------------------------------------------------------
+    |
+    | Opt-in request-identity verification (requires ext-sodium). Set your
+    | Restate environment's public key (publickeyv1_...) to reject requests not
+    | signed by your runtime. Null disables verification.
+    |
+    */
+    'identity_key' => env('RESTATE_IDENTITY_KEY'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Standalone server (`php artisan restate:serve`)
+    |--------------------------------------------------------------------------
+    |
+    | Settings for the bidirectional HTTP/2 (amphp) server, an alternative to the
+    | in-app HTTP route. `workers` > 1 pre-forks that many processes (needs
+    | ext-pcntl); 0 auto-detects the CPU count.
+    |
+    */
+    'server' => [
+        'host' => env('RESTATE_HOST', '0.0.0.0'),
+        'port' => (int) env('RESTATE_PORT', 9080),
+        'workers' => (int) env('RESTATE_WORKERS', 1),
+    ],
+];

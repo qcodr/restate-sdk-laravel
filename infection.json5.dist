@@ -1,0 +1,28 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": ["src"],
+        "excludes": [
+            // Live server glue: ServeCommand blocks on a real amphp event loop, so it is
+            // exercised by the SDK's conformance suite, not units. Mirrored in
+            // phpunit.xml.dist (source exclude) and codecov.yml (ignore).
+            "Console/ServeCommand.php"
+        ]
+    },
+    "mutators": {
+        "@default": true
+    },
+    "testFramework": "phpunit",
+    "tmpDir": "build/infection",
+    // Floors start moderate for the fresh scaffold and should rise as coverage grows.
+    "minMsi": 70,
+    "minCoveredMsi": 75,
+    "logs": {
+        "text": "build/infection/infection.log",
+        "html": "build/infection/infection.html",
+        "summary": "build/infection/summary.log",
+        "stryker": {
+            "badge": "main"
+        }
+    }
+}

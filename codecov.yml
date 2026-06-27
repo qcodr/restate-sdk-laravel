@@ -1,0 +1,21 @@
+# Codecov configuration.
+#
+# ServeCommand is excluded: it blocks the process on a real amphp event loop
+# (AmpStreamingServer) and is verified by the SDK's conformance suite rather than unit
+# tests. See phpunit.xml.dist and infection.json5.dist.
+coverage:
+  status:
+    project:
+      default:
+        target: 90%
+        threshold: 2%
+    patch:
+      default:
+        informational: true
+
+ignore:
+  - "src/Console/ServeCommand.php"
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true
