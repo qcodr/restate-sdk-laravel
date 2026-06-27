@@ -1,0 +1,11 @@
+# Keep the e2e build context (the package root) lean: dependencies and caches are
+# regenerated inside the image, so never ship them to the daemon.
+.git
+**/vendor
+**/node_modules
+**/.phpunit.cache
+**/.php-cs-fixer.cache
+build
+**/composer.lock
+**/.env.local
+tests/e2e/laravel-app/storage/logs/*.log

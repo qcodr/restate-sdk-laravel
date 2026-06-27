@@ -1,6 +1,6 @@
 # Restate Laravel integration — developer tasks. Mirrors the SDK's strict gate.
 
-.PHONY: install test test-unit lint stan cs cs-fix sast infection check
+.PHONY: install test test-unit lint stan cs cs-fix sast infection check e2e
 
 install:
 	composer install
@@ -34,3 +34,9 @@ infection:
 
 # The local pre-commit gate: lint + SAST + unit tests.
 check: lint sast test-unit
+
+# Live end-to-end test: a real Restate runtime + a minimal Laravel app hosting the package's
+# services over bidi HTTP/2, driven through the ingress. Requires Docker (and a >= 1.7 runtime
+# image, AVX2 host). Separate from the offline gate above. KEEP_UP=1 leaves the stack running.
+e2e:
+	tests/e2e/run.sh

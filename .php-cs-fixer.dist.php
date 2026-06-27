@@ -9,6 +9,9 @@ declare(strict_types=1);
  */
 $finder = PhpCsFixer\Finder::create()
     ->in([__DIR__ . '/src', __DIR__ . '/tests', __DIR__ . '/config'])
+    // The e2e harness (tests/e2e) is a standalone Laravel app run via `make e2e`, not part
+    // of the package's coding-standard surface.
+    ->exclude('e2e')
     ->name('*.php');
 
 return (new PhpCsFixer\Config())

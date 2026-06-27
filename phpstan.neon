@@ -8,4 +8,8 @@ parameters:
     paths:
         - src
         - tests
+    # The e2e harness (tests/e2e) is a standalone Laravel app + docker stack, not part of
+    # the package's analysed code; it has its own composer project and is run via `make e2e`.
+    excludePaths:
+        - tests/e2e
     treatPhpDocTypesAsCertain: false

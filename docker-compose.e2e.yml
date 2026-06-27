@@ -1,0 +1,29 @@
+# End-to-end stack for the Restate Laravel package: a real Restate runtime + a minimal Laravel
+# app that hosts the package's services over bidirectional HTTP/2 (amphp). Driven by
+# tests/e2e/run.sh (make e2e).
+services:
+  # The Restate runtime. Bidirectional streaming needs >= 1.7. The experimental V7 flag makes
+  # the runtime offer service protocol V7 (the SDK's default), so the amphp host negotiates its
+  # best-tested protocol; the basic call/state/workflow handlers here also work on V6.
+  restate:
+    image: ${RESTATE_IMAGE:-docker.io/restatedev/restate:1.7.0}
+    environment:
+      - RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true
+    ports:
+      - "8080:8080"   # ingress
+      - "9070:9070"   # admin
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # The Laravel app: `php artisan restate:serve` over true bidi HTTP/2 on 9080. The runtime
+  # reaches it via the compose network as http://laravel-e2e:9080.
+  laravel-e2e:
+    build:
+      context: .
+      dockerfile: docker/e2e/Dockerfile
+    environment:
+      - RESTATE_INGRESS_URL=http://restate:8080
+    expose:
+      - "9080"
+    depends_on:
+      - restate
