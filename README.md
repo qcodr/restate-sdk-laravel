@@ -29,7 +29,7 @@ or per-entity-stateful work:
 ## Requirements
 
 - PHP **8.2+**
-- Laravel **11** or **12**
+- Laravel **12** or **13**
 - [`qcodr/restate-sdk-php`](https://github.com/qcodr/restate-sdk-php) (pulled in automatically)
 - `amphp/http-server` only if you use `php artisan restate:serve` (bidi)
 

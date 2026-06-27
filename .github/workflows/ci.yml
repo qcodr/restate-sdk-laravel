@@ -20,15 +20,19 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.2', '8.3', '8.4']
-        laravel: ['11.*', '12.*']
-        # Testbench tracks the Laravel major (v9 -> Laravel 11, v10 -> Laravel 12); pin it
-        # per leg so composer doesn't pick testbench v10 (which requires Laravel 12) while
-        # Laravel is constrained to 11 and fail to resolve.
+        laravel: ['12.*', '13.*']
+        # Testbench tracks the Laravel major (v10 -> Laravel 12, v11 -> Laravel 13); pin it
+        # per leg so composer resolves a coherent set. Laravel 11 is dropped — it is past
+        # security support, so composer's advisory policy blocks its whole framework range.
         include:
-          - laravel: '11.*'
-            testbench: '9.*'
           - laravel: '12.*'
             testbench: '10.*'
+          - laravel: '13.*'
+            testbench: '11.*'
+        # Laravel 13 requires PHP >= 8.3.
+        exclude:
+          - php: '8.2'
+            laravel: '13.*'
     steps:
       - uses: actions/checkout@v5
 
