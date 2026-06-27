@@ -140,5 +140,9 @@ return [
         'guard' => null,
         'tenant_context_key' => 'restate.tenant',
         'tenant_resolver' => null,
+        // When true, RestateClient auto-attaches the current user/tenant headers to every
+        // outbound dispatch (call/send), so auth/tenancy propagates without passing them by
+        // hand. Per-call $headers still override.
+        'forward_outbound' => false,
     ],
 ];

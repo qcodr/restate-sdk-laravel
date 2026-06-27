@@ -6,7 +6,20 @@
             // Live server glue: ServeCommand blocks on a real amphp event loop, so it is
             // exercised by the SDK's conformance suite, not units. Mirrored in
             // phpunit.xml.dist (source exclude) and codecov.yml (ignore).
-            "Console/ServeCommand.php"
+            "Console/ServeCommand.php",
+            // Service-provider lifecycle glue: register()/boot() wiring (bindings, command
+            // and macro registration, route + config publishing). Behaviour is integration-
+            // tested (bindings/route in the provider tests), but mutating the wiring itself
+            // produces escaped mutants a unit test can't meaningfully kill — like the SDK's
+            // live-socket Server/* exclusion. These stay in coverage (the bindings ARE
+            // covered), only out of the mutation calc.
+            "RestateServiceProvider.php",
+            "Queue/RestateQueueServiceProvider.php",
+            "Discovery/RestateMakeServiceProvider.php",
+            "Codegen/CodegenServiceProvider.php",
+            "Scheduling/RestateSchedulerServiceProvider.php",
+            "Logging/RestateLogServiceProvider.php",
+            "Logging/RestateObservabilityServiceProvider.php"
         ]
     },
     "mutators": {

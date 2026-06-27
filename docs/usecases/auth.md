@@ -121,18 +121,23 @@ $headers = $forwarder->headers();
 // ['x-restate-user' => '42', 'x-restate-tenant' => 'acme']
 ```
 
-> **Wiring assumption — not yet active.** The dispatcher
-> `Qcodr\Restate\Laravel\Client\RestateClient` is a `final` class that currently exposes **no
-> per-call custom-header parameter**, so these headers cannot yet be attached automatically.
-> `ForwardsAuthHeaders` is the ready-to-wire half. Once `RestateClient::call()` / `::send()` gain
-> a `?array $headers = null` parameter, the forwarding becomes a one-liner at the call site:
->
-> ```php
-> $restate->call('OrderService', 'place', $payload, headers: $forwarder->headers());
-> ```
->
-> Until then `headers()` is fully usable on its own — for a custom dispatcher, a raw call, or a
-> test. Only the automatic attachment waits on that parameter.
+**Automatic forwarding.** Set `restate.auth.forward_outbound => true` and the bound
+`RestateClient` attaches the current user/tenant headers to **every** dispatch — no call-site
+change needed:
+
+```php
+// config/restate.php → 'auth' => ['forward_outbound' => true]
+$restate->call('OrderService', 'place', $payload);   // x-restate-user / x-restate-tenant attached
+```
+
+Per-call headers still override key-for-key:
+
+```php
+$restate->call('OrderService', 'place', $payload, headers: ['x-restate-tenant' => 'other']);
+```
+
+`ForwardsAuthHeaders::headers()` remains usable standalone (a custom dispatcher, a raw call, or
+a test) when you want explicit control instead of the automatic attachment.
 
 ## The round trip
 

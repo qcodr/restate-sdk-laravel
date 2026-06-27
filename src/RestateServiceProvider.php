@@ -9,6 +9,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Qcodr\Restate\Laravel\Auth\ForwardsAuthHeaders;
 use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Laravel\Codegen\CodegenServiceProvider;
 use Qcodr\Restate\Laravel\Console\DiscoverCommand;
@@ -62,10 +63,17 @@ final class RestateServiceProvider extends ServiceProvider
         $this->app->singleton(RestateClient::class, static function (Application $app): RestateClient {
             $ingress = $app->make(RestateManager::class)->ingressConfig();
 
+            // When `restate.auth.forward_outbound` is on, attach the current user/tenant
+            // headers to every dispatch so auth/tenancy propagates across the call.
+            $forwardAuth = $app->make(Config::class)->get('restate.auth.forward_outbound', false) === true;
+
             return new RestateClient(
                 $app->make(HttpFactory::class),
                 $ingress['url'],
                 $ingress['token'],
+                $forwardAuth
+                    ? static fn (): array => $app->make(ForwardsAuthHeaders::class)->headers()
+                    : null,
             );
         });
     }

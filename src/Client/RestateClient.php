@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Qcodr\Restate\Laravel\Client;
 
+use Closure;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -50,10 +51,16 @@ final class RestateClient
      */
     private const SEND_SUFFIX = '/send';
 
+    /**
+     * @param Closure(): array<string, string>|null $defaultHeaders headers attached to every
+     *        dispatch (e.g. auth/tenant propagation when `restate.auth.forward_outbound` is on);
+     *        per-call `$headers` override these key-for-key
+     */
     public function __construct(
         private readonly Factory $http,
         private readonly string $baseUrl,
         private readonly ?string $token = null,
+        private readonly ?Closure $defaultHeaders = null,
     ) {
     }
 
@@ -163,8 +170,14 @@ final class RestateClient
             $request = $request->withToken($this->token);
         }
 
-        if ($headers !== null && $headers !== []) {
-            $request = $request->withHeaders($headers);
+        // Default headers (e.g. auto-forwarded auth/tenant) underlie the per-call headers,
+        // which override key-for-key.
+        $merged = $this->defaultHeaders !== null ? ($this->defaultHeaders)() : [];
+        if ($headers !== null) {
+            $merged = [...$merged, ...$headers];
+        }
+        if ($merged !== []) {
+            $request = $request->withHeaders($merged);
         }
 
         if ($idempotencyKey !== null) {

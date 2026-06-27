@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Qcodr\Restate\Laravel\Tests\Unit\Client;
 
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Http;
 use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Laravel\Client\RestateRequestException;
@@ -178,6 +180,39 @@ final class RestateClientTest extends TestCase
     public function testFacadeExposesTheSameClientInstance(): void
     {
         self::assertSame(app(RestateClient::class), Restate::client());
+    }
+
+    public function testForwardsDefaultHeadersAndPerCallOverridesThem(): void
+    {
+        Http::fake(['*' => Http::response(['greeting' => 'hi'], 200)]);
+
+        $client = new RestateClient(
+            app(Factory::class),
+            self::BASE_URL,
+            null,
+            static fn (): array => ['x-restate-user' => '7', 'x-restate-tenant' => 'acme'],
+        );
+
+        $client->call('GreeterService', 'greet', ['name' => 'world'], null, null, ['x-restate-tenant' => 'globex']);
+
+        Http::assertSent(static function (Request $request): bool {
+            return $request->hasHeader('x-restate-user', '7')          // default forwarded
+                && $request->hasHeader('x-restate-tenant', 'globex');  // per-call overrides the default
+        });
+    }
+
+    public function testForwardOutboundConfigAutoAttachesTheTenantHeader(): void
+    {
+        // Enable auto-forward, drop the memoised singleton so it rebuilds with the closure,
+        // and put a tenant on Laravel's Context — ForwardsAuthHeaders turns it into a header.
+        app(Repository::class)->set('restate.auth.forward_outbound', true);
+        app()->forgetInstance(RestateClient::class);
+        Context::add('restate.tenant', 'acme');
+
+        Http::fake(['*' => Http::response(['greeting' => 'hi'], 200)]);
+        $this->client()->call('GreeterService', 'greet', ['name' => 'world']);
+
+        Http::assertSent(static fn (Request $request): bool => $request->hasHeader('x-restate-tenant', 'acme'));
     }
 
     private function client(): RestateClient
