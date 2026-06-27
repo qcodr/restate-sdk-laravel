@@ -21,6 +21,14 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4']
         laravel: ['11.*', '12.*']
+        # Testbench tracks the Laravel major (v9 -> Laravel 11, v10 -> Laravel 12); pin it
+        # per leg so composer doesn't pick testbench v10 (which requires Laravel 12) while
+        # Laravel is constrained to 11 and fail to resolve.
+        include:
+          - laravel: '11.*'
+            testbench: '9.*'
+          - laravel: '12.*'
+            testbench: '10.*'
     steps:
       - uses: actions/checkout@v5
 
@@ -31,8 +39,8 @@ jobs:
           extensions: mbstring, json
           coverage: none
 
-      - name: Constrain Laravel
-        run: composer require "illuminate/contracts:${{ matrix.laravel }}" --no-update --no-interaction
+      - name: Constrain Laravel + Testbench
+        run: composer require "illuminate/contracts:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction
 
       - name: Install dependencies
         run: composer update --no-interaction --no-progress --prefer-dist
