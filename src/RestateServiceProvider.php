@@ -6,8 +6,10 @@ namespace Qcodr\Restate\Laravel;
 
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Laravel\Console\DiscoverCommand;
 use Qcodr\Restate\Laravel\Console\ServeCommand;
 use Qcodr\Restate\Laravel\Http\EndpointController;
@@ -19,6 +21,8 @@ use Qcodr\Restate\Sdk\Endpoint\RequestProcessor;
  *  - merges/publishes the `restate` config;
  *  - binds {@see RestateManager} (builds the endpoint from config, container-resolving
  *    each service) and a {@see RequestProcessor} singleton over it;
+ *  - binds the {@see RestateClient} singleton (the ingress dispatcher) from the `ingress`
+ *    config, so Laravel code can start invocations via `Restate::client()` or DI;
  *  - registers a catch-all HTTP route at the configured prefix served by
  *    {@see EndpointController} (request/response), unless the prefix is disabled;
  *  - registers the `restate:serve` and `restate:discover` Artisan commands.
@@ -37,6 +41,18 @@ final class RestateServiceProvider extends ServiceProvider
 
         $this->app->singleton(RequestProcessor::class, static function (Application $app): RequestProcessor {
             return $app->make(RestateManager::class)->processor();
+        });
+
+        // The client side: a singleton ingress dispatcher built from the `ingress` config,
+        // sharing Laravel's HTTP client factory (so `Http::fake()` intercepts it in tests).
+        $this->app->singleton(RestateClient::class, static function (Application $app): RestateClient {
+            $ingress = $app->make(RestateManager::class)->ingressConfig();
+
+            return new RestateClient(
+                $app->make(HttpFactory::class),
+                $ingress['url'],
+                $ingress['token'],
+            );
         });
     }
 

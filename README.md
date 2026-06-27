@@ -106,6 +106,32 @@ php artisan restate:serve --port=9080 --workers=8
 
 Set config `path` to `null` to disable the in-app route when serving this way.
 
+## Calling Restate from Laravel
+
+The two sections above expose *your* handlers to the runtime. The reverse direction — starting
+a Restate invocation from ordinary Laravel code (a controller, job, or listener) — goes through
+the Restate **ingress** with the `RestateClient`:
+
+```php
+use Qcodr\Restate\Laravel\Client\RestateClient;
+
+public function __construct(private readonly RestateClient $restate) {}
+
+// Call and await the result (request/response):
+$greeting = $this->restate->call('GreeterService', 'greet', 'Ada');
+
+// Fire-and-forget — returns the invocation id immediately:
+$id = $this->restate->send('OrderWorkflow', 'run', ['orderId' => $orderId], key: $orderId);
+
+// Keyed object/workflow, idempotency, and a durable delayed send:
+$this->restate->send('OnboardingService', 'nudge', ['userId' => $id], key: $id, delayMs: 3_600_000);
+```
+
+Configure the ingress in `config/restate.php` (`ingress.url`, `RESTATE_INGRESS_URL`; optional
+`ingress.token`, `RESTATE_INGRESS_TOKEN` → `Authorization: Bearer`). Full recipe — controllers,
+jobs, listeners, idempotency, delayed send, error handling — in
+**[docs/usecases/dispatch.md](docs/usecases/dispatch.md)**.
+
 ## Configuration
 
 `config/restate.php`:
@@ -116,6 +142,7 @@ Set config `path` to `null` to disable the in-app route when serving this way.
 | `path` | Route prefix the runtime calls (`null` disables the in-app route) |
 | `middleware` | Middleware group for the route (default `['api']`) |
 | `identity_key` | `publickeyv1_...` to verify request signatures (needs `ext-sodium`) |
+| `ingress.{url,token}` | Restate ingress base URL + optional Bearer token for the `RestateClient` (the caller side) |
 | `server.{host,port,workers}` | `restate:serve` bind settings (`workers: 0` = one per CPU) |
 
 ## Artisan
@@ -139,6 +166,10 @@ recipes:
 - **[Rate limiter](docs/usecases/rate-limiter.md)** — a per-key token bucket as a
   `#[VirtualObject]`: single-writer state per key, no `lockForUpdate` / Redis race. The
   proof drains one key while another stays full, showing per-key isolation.
+- **[Dispatch from Laravel](docs/usecases/dispatch.md)** — the *caller* side: start
+  invocations (call-and-await, fire-and-forget `send`, keyed objects/workflows, idempotency,
+  durable delayed send) from a controller, job, or listener via the `RestateClient` over the
+  Restate ingress.
 
 > Both surface a real SDK boundary: `JsonSerde` hands handlers the **decoded array**, not a
 > hydrated object, so a handler's input parameter is `array`/scalar and the value object is

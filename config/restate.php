@@ -45,6 +45,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Ingress (dispatching invocations from Laravel)
+    |--------------------------------------------------------------------------
+    |
+    | Where the client side (Qcodr\Restate\Laravel\Client\RestateClient, exposed as
+    | Restate::client()) sends invocations started from ordinary Laravel code —
+    | controllers, jobs, listeners. `url` is the Restate ingress base URL (port 8080
+    | by default); `token`, when set, is sent as `Authorization: Bearer <token>` for
+    | a secured ingress (e.g. Restate Cloud). This is the *caller*, distinct from the
+    | `path`/`server` settings above, which serve *this* app's handlers to the runtime.
+    |
+    */
+    'ingress' => [
+        'url' => env('RESTATE_INGRESS_URL', 'http://localhost:8080'),
+        'token' => env('RESTATE_INGRESS_TOKEN'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Standalone server (`php artisan restate:serve`)
     |--------------------------------------------------------------------------
     |

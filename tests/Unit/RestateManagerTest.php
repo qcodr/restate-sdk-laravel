@@ -81,4 +81,32 @@ final class RestateManagerTest extends TestCase
 
         self::assertSame(['host' => '0.0.0.0', 'port' => 9080, 'workers' => 1], $manager->serverConfig());
     }
+
+    public function testIngressConfigDefaultsToLocalRuntimeWithoutToken(): void
+    {
+        $manager = new RestateManager(new Container(), []);
+
+        self::assertSame(['url' => 'http://localhost:8080', 'token' => null], $manager->ingressConfig());
+    }
+
+    public function testIngressConfigReadsUrlAndToken(): void
+    {
+        $manager = new RestateManager(new Container(), [
+            'ingress' => ['url' => 'https://ingress.example.com', 'token' => 'tok'],
+        ]);
+
+        self::assertSame(
+            ['url' => 'https://ingress.example.com', 'token' => 'tok'],
+            $manager->ingressConfig(),
+        );
+    }
+
+    public function testIngressConfigNormalisesEmptyValues(): void
+    {
+        $manager = new RestateManager(new Container(), [
+            'ingress' => ['url' => '', 'token' => ''],
+        ]);
+
+        self::assertSame(['url' => 'http://localhost:8080', 'token' => null], $manager->ingressConfig());
+    }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Qcodr\Restate\Laravel;
 
 use Illuminate\Contracts\Container\Container;
+use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Sdk\Endpoint\Endpoint;
 use Qcodr\Restate\Sdk\Endpoint\ProtocolMode;
 use Qcodr\Restate\Sdk\Endpoint\RequestProcessor;
@@ -20,6 +21,11 @@ use Qcodr\Restate\Sdk\Endpoint\RequestProcessor;
  */
 final class RestateManager
 {
+    /**
+     * Default Restate ingress base URL — a local runtime's HTTP ingress on its standard port.
+     */
+    private const DEFAULT_INGRESS_URL = 'http://localhost:8080';
+
     private ?Endpoint $endpoint = null;
 
     /**
@@ -111,6 +117,38 @@ final class RestateManager
         }
 
         return \array_values(\array_filter($middleware, static fn (mixed $m): bool => \is_string($m)));
+    }
+
+    /**
+     * The ingress dispatcher (client side) for starting invocations from Laravel code.
+     * Resolved from the container so it stays a shared singleton; exposed here so the
+     * `Restate` facade can reach it as `Restate::client()`.
+     */
+    public function client(): RestateClient
+    {
+        return $this->container->make(RestateClient::class);
+    }
+
+    /**
+     * The Restate ingress connection settings the {@see RestateClient} is built from: the base
+     * `url` (falling back to a local runtime) and an optional bearer `token` for a secured
+     * ingress. Empty/non-string values are normalised away so the client always receives a
+     * usable URL and a real-or-null token.
+     *
+     * @return array{url: string, token: string|null}
+     */
+    public function ingressConfig(): array
+    {
+        $ingress = $this->config['ingress'] ?? [];
+        $ingress = \is_array($ingress) ? $ingress : [];
+
+        $url = $ingress['url'] ?? self::DEFAULT_INGRESS_URL;
+        $token = $ingress['token'] ?? null;
+
+        return [
+            'url' => \is_string($url) && $url !== '' ? $url : self::DEFAULT_INGRESS_URL,
+            'token' => \is_string($token) && $token !== '' ? $token : null,
+        ];
     }
 
     /**
