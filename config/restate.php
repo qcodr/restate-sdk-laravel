@@ -16,7 +16,26 @@ return [
     */
     'services' => [
         // App\Restate\GreeterService::class,
+
+        // Uncomment to run Laravel jobs dispatched on the `restate` queue connection:
+        // \Qcodr\Restate\Laravel\Queue\JobRunner::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-discovery
+    |--------------------------------------------------------------------------
+    |
+    | Optionally scan a directory for #[Service]/#[VirtualObject]/#[Workflow]
+    | classes and register them automatically (merged with `services` above).
+    | `discover` is the directory; `discover_namespace` is the namespace it maps
+    | to. Null disables scanning.
+    |
+    |   'discover' => app_path('Restate'),
+    |
+    */
+    'discover' => env('RESTATE_DISCOVER'),
+    'discover_namespace' => 'App\\Restate',
 
     /*
     |--------------------------------------------------------------------------

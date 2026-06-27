@@ -170,10 +170,20 @@ recipes:
   invocations (call-and-await, fire-and-forget `send`, keyed objects/workflows, idempotency,
   durable delayed send) from a controller, job, or listener via the `RestateClient` over the
   Restate ingress.
+- **[Queue connection](docs/usecases/queue.md)** — dispatch existing `ShouldQueue` jobs on
+  the `restate` connection (`->onConnection('restate')`) to run them **durably** on Restate
+  (exactly-once, durable retries) with no `queue:work` worker.
+- **[Validation](docs/usecases/validation.md)** — validate a handler's decoded-array input
+  with Laravel's Validator at the boundary via the `ValidatesInput` trait, throwing a
+  terminal 400 on bad input (the idiomatic answer to the array gotcha below).
+- **[Testing](docs/usecases/testing.md)** — `Restate::fake()` + `Restate::assertCalled(...)`
+  / `assertSent(...)`, the `Bus::fake()` equivalent for Restate dispatches.
+- **[Generators & discovery](docs/usecases/discovery.md)** — `php artisan make:restate-service`
+  (`-object`, `-workflow`) plus directory auto-discovery (config `discover`).
 
-> Both surface a real SDK boundary: `JsonSerde` hands handlers the **decoded array**, not a
-> hydrated object, so a handler's input parameter is `array`/scalar and the value object is
-> built (and validated) inside the handler.
+> Several surface a real SDK boundary: `JsonSerde` hands handlers the **decoded array**, not
+> a hydrated object, so a handler's input parameter is `array`/scalar and the value object is
+> built (and validated — see the Validation trait) inside the handler.
 
 ## Code quality
 

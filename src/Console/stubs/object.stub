@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Qcodr\Restate\Sdk\Context\ObjectContext;
+use Qcodr\Restate\Sdk\Service\Attribute\Handler;
+use Qcodr\Restate\Sdk\Service\Attribute\VirtualObject;
+
+/**
+ * A Restate Virtual Object: per-key state with a single writer.
+ *
+ * Restate runs exclusive (`#[Handler]`) invocations for any one key ONE AT A TIME, so the
+ * read-modify-write below is race-free per key — no locks, no lost updates. Different keys
+ * get independent state and run concurrently. Bind it via config/restate.php (`services`)
+ * or the discovered directory (config `restate.discover`).
+ */
+#[VirtualObject]
+final class {{ class }}
+{
+    /** State key under which this object's value is journaled. */
+    private const STATE_KEY = 'value';
+
+    /**
+     * A sample exclusive handler: the get -> compute -> set here is atomic with respect to
+     * every other handler on the same key.
+     *
+     * The input is the raw decoded JSON body (`?array`), NOT a typed object: the SDK's
+     * JsonSerde coerces only scalar type hints and hands a custom-class hint the decoded
+     * array as-is — so accept the array and build your own input at the boundary instead.
+     *
+     * @param array<array-key, mixed>|null $input the decoded JSON request body
+     *
+     * @return array<string, mixed>
+     */
+    #[Handler]
+    public function update(ObjectContext $ctx, ?array $input = null): array
+    {
+        // validate + build your input here
+        $ctx->set(self::STATE_KEY, $input ?? []);
+
+        return ['key' => $ctx->key(), 'state' => $input ?? []];
+    }
+}

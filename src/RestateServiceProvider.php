@@ -12,7 +12,9 @@ use Illuminate\Support\ServiceProvider;
 use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Laravel\Console\DiscoverCommand;
 use Qcodr\Restate\Laravel\Console\ServeCommand;
+use Qcodr\Restate\Laravel\Discovery\RestateMakeServiceProvider;
 use Qcodr\Restate\Laravel\Http\EndpointController;
+use Qcodr\Restate\Laravel\Queue\RestateQueueServiceProvider;
 use Qcodr\Restate\Sdk\Endpoint\RequestProcessor;
 
 /**
@@ -32,6 +34,11 @@ final class RestateServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/restate.php', 'restate');
+
+        // Feature sub-providers: the `restate` queue connector and the make:restate-*
+        // generators. Each is self-contained (console-gates itself where relevant).
+        $this->app->register(RestateQueueServiceProvider::class);
+        $this->app->register(RestateMakeServiceProvider::class);
 
         $this->app->singleton(RestateManager::class, static function (Application $app): RestateManager {
             $config = $app->make(Config::class)->get('restate', []);

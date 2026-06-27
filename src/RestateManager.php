@@ -6,6 +6,7 @@ namespace Qcodr\Restate\Laravel;
 
 use Illuminate\Contracts\Container\Container;
 use Qcodr\Restate\Laravel\Client\RestateClient;
+use Qcodr\Restate\Laravel\Discovery\ServiceScanner;
 use Qcodr\Restate\Sdk\Endpoint\Endpoint;
 use Qcodr\Restate\Sdk\Endpoint\ProtocolMode;
 use Qcodr\Restate\Sdk\Endpoint\RequestProcessor;
@@ -45,14 +46,24 @@ final class RestateManager
     public function serviceClasses(): array
     {
         $services = $this->config['services'] ?? [];
-        if (!\is_array($services)) {
-            return [];
-        }
-
-        return \array_values(\array_filter(
+        $explicit = \is_array($services) ? \array_values(\array_filter(
             $services,
             static fn (mixed $class): bool => \is_string($class) && $class !== '',
-        ));
+        )) : [];
+
+        // Optional auto-discovery: scan a directory (config `discover`, mapped to the
+        // `discover_namespace`, default App\Restate) for #[Service]/#[VirtualObject]/
+        // #[Workflow] classes and merge them with the explicit list.
+        $discover = $this->config['discover'] ?? null;
+        if (!\is_string($discover) || $discover === '') {
+            return $explicit;
+        }
+
+        $namespace = $this->config['discover_namespace'] ?? 'App\\Restate';
+        $namespace = \is_string($namespace) && $namespace !== '' ? $namespace : 'App\\Restate';
+        $discovered = (new ServiceScanner())->scan($discover, $namespace);
+
+        return \array_values(\array_unique([...$explicit, ...$discovered]));
     }
 
     /**

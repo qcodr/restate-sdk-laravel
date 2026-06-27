@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Qcodr\Restate\Sdk\Context\WorkflowContext;
+use Qcodr\Restate\Sdk\Service\Attribute\Handler;
+use Qcodr\Restate\Sdk\Service\Attribute\Workflow;
+
+/**
+ * A Restate Workflow: a virtual object whose `run` handler executes exactly once per key.
+ *
+ * Each `$ctx->run(...)` step is journaled and replayed from its stored result on retry, so
+ * a crash mid-flight never repeats a committed step — durable execution without a hand-rolled
+ * state table. Bind it via config/restate.php (`services`) or the discovered directory
+ * (config `restate.discover`).
+ */
+#[Workflow]
+final class {{ class }}
+{
+    /**
+     * The `run` entrypoint: executes exactly once per workflow key.
+     *
+     * The input is the raw decoded JSON body (`?array`), NOT a typed object: the SDK's
+     * JsonSerde coerces only scalar type hints and hands a custom-class hint the decoded
+     * array as-is — so accept the array and build your own input at the boundary instead.
+     * Step names double as journal keys, so keep them stable across deploys.
+     *
+     * @param array<array-key, mixed>|null $input the decoded JSON request body
+     *
+     * @return array<string, mixed>
+     */
+    #[Handler]
+    public function run(WorkflowContext $ctx, ?array $input = null): array
+    {
+        // validate + build your input here
+        $result = $ctx->run('step-one', static fn (): string => 'done');
+
+        return ['status' => $result];
+    }
+}

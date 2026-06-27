@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Qcodr\Restate\Sdk\Context\Context;
+use Qcodr\Restate\Sdk\Service\Attribute\Handler;
+use Qcodr\Restate\Sdk\Service\Attribute\Service;
+
+/**
+ * A Restate Service: a set of stateless handlers with unlimited concurrency.
+ *
+ * Bind it by adding the class to config/restate.php (`services`), or by placing it
+ * under the discovered directory (config `restate.discover`) so it is registered
+ * automatically.
+ */
+#[Service]
+final class {{ class }}
+{
+    /**
+     * A sample handler.
+     *
+     * The input is the raw decoded JSON body (`?array`), NOT a typed object: the SDK's
+     * JsonSerde coerces only scalar type hints and hands a custom-class hint the decoded
+     * array as-is. A handler declaring a value object would therefore receive an array and
+     * fail on every (retryable) attempt — so accept the array and build your own input at
+     * the boundary instead.
+     *
+     * @param array<array-key, mixed>|null $input the decoded JSON request body
+     *
+     * @return array<string, mixed>
+     */
+    #[Handler]
+    public function greet(Context $ctx, ?array $input = null): array
+    {
+        // validate + build your input here
+        return ['message' => 'Hello from {{ class }}'];
+    }
+}
