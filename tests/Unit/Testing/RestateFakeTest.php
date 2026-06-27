@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Qcodr\Restate\Laravel\Tests\Unit\Testing;
 
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\AssertionFailedError;
 use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Laravel\Testing\RestateFake;
@@ -154,6 +155,78 @@ final class RestateFakeTest extends TestCase
             'GreeterSvc',
             'ping',
             static fn (mixed $body, ?string $key): bool => $body === null && $key === null,
+        );
+    }
+
+    public function testAssertCalledTimesIgnoresNonInvocationRequests(): void
+    {
+        // A non-POST request recorded alongside a real dispatch must not be counted as a Restate
+        // invocation (a GET to the ingress is faked, so no network escapes).
+        RestateFake::fake();
+
+        Http::get('http://localhost:8080/health');
+        $this->client()->call('GreeterSvc', 'greet', 'x');
+
+        RestateFake::assertCalledTimes('GreeterSvc', 'greet', 1);
+    }
+
+    public function testAssertSentRejectsARequestResponseCall(): void
+    {
+        // A `call()` has no `/send` suffix, so it must never satisfy `assertSent()`.
+        RestateFake::fake();
+
+        $this->client()->call('GreeterSvc', 'greet', 'x');
+
+        $this->expectException(AssertionFailedError::class);
+        RestateFake::assertSent('GreeterSvc', 'greet');
+    }
+
+    public function testAssertCalledRejectsAPathThatIsNeitherKeyedNorUnkeyed(): void
+    {
+        // A four-segment POST to the ingress is not a recognisable target shape, so no assertion
+        // can match it.
+        RestateFake::fake();
+
+        Http::post('http://localhost:8080/a/b/c/d', ['x' => 1]);
+
+        $this->expectException(AssertionFailedError::class);
+        RestateFake::assertCalled('a', 'b');
+    }
+
+    public function testAssertNothingDispatchedIgnoresNonPostRequestsToTheIngress(): void
+    {
+        // A GET to an invocation-shaped ingress path is not a dispatch (only POST is).
+        RestateFake::fake();
+
+        Http::get('http://localhost:8080/GreeterSvc/greet');
+
+        RestateFake::assertNothingDispatched();
+    }
+
+    public function testAssertNothingDispatchedIgnoresPostsToAForeignHost(): void
+    {
+        // A POST to another host, even with an invocation-shaped path, is not a Restate dispatch.
+        // Stub the foreign host too so the call is faked rather than hitting the network.
+        RestateFake::fake();
+        Http::fake(['https://api.example.com/*' => Http::response('', 200)]);
+
+        Http::post('https://api.example.com/GreeterSvc/greet', ['x' => 1]);
+
+        RestateFake::assertNothingDispatched();
+    }
+
+    public function testAssertCalledPercentDecodesAKeySegment(): void
+    {
+        // The client rawurlencodes a key containing "/" to %2F; the fake must decode it back so a
+        // filter sees the original key value.
+        RestateFake::fake();
+
+        $this->client()->call('Svc', 'handle', ['x' => 1], 'a/b');
+
+        RestateFake::assertCalled(
+            'Svc',
+            'handle',
+            static fn (mixed $body, ?string $key): bool => $key === 'a/b',
         );
     }
 

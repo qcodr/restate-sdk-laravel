@@ -113,6 +113,21 @@ final class RestateClientTest extends TestCase
         }
     }
 
+    public function testSendThrowsAFailedRequestExceptionOnNon2xxResponse(): void
+    {
+        // The body carries a valid invocationId so only the non-2xx guard can produce an error:
+        // a missing throw would (wrongly) return the id instead of failing.
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_should_not_return'], 500)]);
+
+        try {
+            $this->client()->send('GreeterService', 'greet', ['name' => 'world']);
+            self::fail('Expected RestateRequestException on a non-2xx ingress send response.');
+        } catch (RestateRequestException $e) {
+            self::assertSame(500, $e->status);
+            self::assertStringContainsString('failed with HTTP 500', $e->getMessage());
+        }
+    }
+
     public function testSetsIdempotencyKeyHeaderWhenProvided(): void
     {
         Http::fake(['*' => Http::response(['greeting' => 'hi'], 200)]);

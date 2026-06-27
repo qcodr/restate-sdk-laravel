@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Context;
 use Qcodr\Restate\Laravel\Auth\RestateContext;
 use Qcodr\Restate\Laravel\Tests\TestCase;
+use RuntimeException;
 
 /**
  * Drives the INBOUND helper {@see RestateContext::withAuth()}: given a {@see Context} whose
@@ -137,6 +138,77 @@ final class RestateContextTest extends TestCase
         });
 
         self::assertSame('tenant:acme', $seenTenant, 'the resolver maps the raw id before it is bound into context');
+    }
+
+    public function testResolvesTenantThroughAContainerResolvableInvokableResolver(): void
+    {
+        // A class-string resolver is pulled from the container and invoked with the raw id.
+        config()->set('restate.auth.tenant_resolver', InvokableTenantResolver::class);
+        $ctx = new RequestHeadersContext(['x-restate-tenant' => 'acme']);
+
+        $seenTenant = null;
+        $this->restate()->withAuth($ctx, static function () use (&$seenTenant): void {
+            $seenTenant = Context::get(self::TENANT_CONTEXT_KEY);
+        });
+
+        self::assertSame('resolved:acme', $seenTenant);
+    }
+
+    public function testThrowsWhenTheTenantResolverIsNeitherCallableNorString(): void
+    {
+        config()->set('restate.auth.tenant_resolver', 42);
+        $ctx = new RequestHeadersContext(['x-restate-tenant' => 'acme']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('restate.auth.tenant_resolver must be a callable');
+
+        $this->restate()->withAuth($ctx, static fn (): null => null);
+    }
+
+    public function testThrowsWhenTheTenantResolverClassStringIsNotInvokable(): void
+    {
+        config()->set('restate.auth.tenant_resolver', NonInvokableResolver::class);
+        $ctx = new RequestHeadersContext(['x-restate-tenant' => 'acme']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('restate.auth.tenant_resolver must be a callable');
+
+        $this->restate()->withAuth($ctx, static fn (): null => null);
+    }
+
+    public function testThrowsWhenTheConfiguredGuardIsNotStateful(): void
+    {
+        // A token guard is a Guard but not a StatefulGuard, so a propagated user id cannot be
+        // resolved through it; the helper fails fast and names the offending guard.
+        config()->set('auth.guards.restate-token', ['driver' => 'token', 'provider' => 'restate-users']);
+        config()->set('restate.auth.guard', 'restate-token');
+
+        $ctx = new RequestHeadersContext(['x-restate-user' => '42']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('restate-token');
+
+        $this->restate()->withAuth($ctx, static fn (): null => null);
+    }
+
+    public function testHeaderLookupIsCaseInsensitiveForUserAndTenant(): void
+    {
+        // HTTP header names are case-insensitive; a runtime may surface them mixed-case. Both
+        // the user and the tenant must still resolve, and both must survive the lowercasing.
+        $ctx = new RequestHeadersContext([
+            'X-Restate-User' => '42',
+            'X-Restate-Tenant' => 'acme',
+        ]);
+
+        $seenId = null;
+        $seenTenant = null;
+        $this->restate()->withAuth($ctx, static function () use (&$seenId, &$seenTenant): void {
+            $seenId = auth()->id();
+            $seenTenant = Context::get(self::TENANT_CONTEXT_KEY);
+        });
+
+        self::assertSame('42', $seenId);
+        self::assertSame('acme', $seenTenant);
     }
 
     private function restate(): RestateContext

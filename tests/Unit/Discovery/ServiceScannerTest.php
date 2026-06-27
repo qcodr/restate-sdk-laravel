@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Qcodr\Restate\Laravel\Discovery\RestateMakeServiceProvider;
 use Qcodr\Restate\Laravel\Discovery\ServiceScanner;
 use Qcodr\Restate\Laravel\RestateServiceProvider;
+use Qcodr\Restate\Laravel\Tests\Discovery\Fixtures\AbstractFixtureService;
 use Qcodr\Restate\Laravel\Tests\Discovery\Fixtures\FixtureObject;
 use Qcodr\Restate\Laravel\Tests\Discovery\Fixtures\FixtureService;
 use Qcodr\Restate\Laravel\Tests\TestCase;
@@ -46,5 +47,18 @@ final class ServiceScannerTest extends TestCase
         $scanner = new ServiceScanner();
 
         self::assertSame([], $scanner->scan('/no/such/restate/discover/path', 'App\\Restate'));
+    }
+
+    public function testExcludesAbstractAttributedClasses(): void
+    {
+        $scanner = new ServiceScanner();
+        $directory = \dirname(__DIR__, 2) . '/Discovery/Fixtures';
+
+        $found = $scanner->scan($directory, 'Qcodr\\Restate\\Laravel\\Tests\\Discovery\\Fixtures');
+
+        // The abstract class carries a #[Service] marker but cannot be bound, so it is dropped;
+        // only the two concrete attributed classes remain.
+        self::assertNotContains(AbstractFixtureService::class, $found);
+        self::assertSame([FixtureObject::class, FixtureService::class], $found);
     }
 }

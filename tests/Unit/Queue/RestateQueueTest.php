@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Qcodr\Restate\Laravel\Tests\Unit\Queue;
 
+use DateInterval;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Queue\QueueManager;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 use Qcodr\Restate\Laravel\Queue\JobRunner;
 use Qcodr\Restate\Laravel\Queue\RestateQueue;
 
@@ -102,6 +105,84 @@ final class RestateQueueTest extends QueueTestCase
 
         self::assertSame(['round-trip'], RecordingJob::$handled);
         self::assertSame(['handle'], $context->ranSteps());
+    }
+
+    public function testPushRawDispatchesAPreSerialisedEnvelopeWithItsUuidAsTheIdempotencyKey(): void
+    {
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_raw'], 200)]);
+
+        $invocationId = $this->queue()->pushRaw('{"uuid":"u-raw","data":{"commandName":"X"}}');
+
+        self::assertSame('inv_raw', $invocationId);
+        Http::assertSent(static function (Request $request): bool {
+            return $request->method() === 'POST'
+                && $request->url() === self::SEND_URL
+                && $request->hasHeader('Idempotency-Key', 'u-raw');
+        });
+    }
+
+    public function testPushRawHonoursADelayOptionInMilliseconds(): void
+    {
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_raw_delay'], 200)]);
+
+        $this->queue()->pushRaw('{"uuid":"u-delay","data":[]}', null, ['delay' => 60]);
+
+        Http::assertSent(static fn (Request $request): bool => $request->url() === self::SEND_URL . '?delay=60000ms');
+    }
+
+    public function testPushRawRejectsAnUnsupportedDelayType(): void
+    {
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_x'], 200)]);
+
+        try {
+            $this->queue()->pushRaw('{"uuid":"u","data":[]}', null, ['delay' => 'soon']);
+            self::fail('Expected an InvalidArgumentException for a string delay.');
+        } catch (InvalidArgumentException $e) {
+            self::assertSame(
+                'RestateQueue delay must be an int, DateInterval, or DateTimeInterface; got string.',
+                $e->getMessage(),
+            );
+        }
+    }
+
+    public function testDecodingANonObjectPayloadThrows(): void
+    {
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_x'], 200)]);
+
+        try {
+            $this->queue()->pushRaw('123');
+            self::fail('Expected an InvalidArgumentException for a non-object JSON payload.');
+        } catch (InvalidArgumentException $e) {
+            self::assertSame(
+                'RestateQueue expected a JSON object job payload; got int.',
+                $e->getMessage(),
+            );
+        }
+    }
+
+    public function testLaterAcceptsADateTimeInterfaceDelay(): void
+    {
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_dt'], 200)]);
+
+        $this->queue()->later(Carbon::now()->addSeconds(45), new RecordingJob('dt'));
+
+        Http::assertSent(static function (Request $request): bool {
+            // A DateTimeInterface delay must resolve to a positive millisecond delay query.
+            return \str_contains($request->url(), self::SEND_URL . '?delay=')
+                && \str_ends_with($request->url(), 'ms');
+        });
+    }
+
+    public function testLaterAcceptsADateIntervalDelay(): void
+    {
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_di'], 200)]);
+
+        $this->queue()->later(new DateInterval('PT30S'), new RecordingJob('di'));
+
+        Http::assertSent(static function (Request $request): bool {
+            return \str_contains($request->url(), self::SEND_URL . '?delay=')
+                && \str_ends_with($request->url(), 'ms');
+        });
     }
 
     public function testReadSideReflectsThatRestateOwnsExecution(): void

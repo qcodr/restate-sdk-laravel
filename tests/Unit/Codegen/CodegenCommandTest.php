@@ -8,7 +8,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\File;
 use Illuminate\Testing\PendingCommand;
 use Qcodr\Restate\Laravel\Codegen\CodegenServiceProvider;
+use Qcodr\Restate\Laravel\RestateManager;
 use Qcodr\Restate\Laravel\RestateServiceProvider;
+use Qcodr\Restate\Laravel\Tests\Discovery\Fixtures\PlainClass;
 use Qcodr\Restate\Laravel\Tests\TestCase;
 
 /**
@@ -73,6 +75,47 @@ final class CodegenCommandTest extends TestCase
         self::assertStringContainsString('public static function fromContext(Context $ctx): self', $contents);
         self::assertStringContainsString('public function greet(', $contents);
         self::assertStringContainsString("serviceCall('GreeterService', 'greet'", $contents);
+    }
+
+    public function testWarnsAndSucceedsWhenNoServicesAreConfigured(): void
+    {
+        config()->set('restate.services', []);
+        config()->set('restate.discover', null);
+        app()->forgetInstance(RestateManager::class);
+
+        $pending = $this->artisan('restate:codegen');
+        self::assertInstanceOf(PendingCommand::class, $pending);
+
+        $pending->expectsOutputToContain('No services configured')->assertExitCode(0);
+    }
+
+    public function testReportsFailureWhenAServiceCannotBeGenerated(): void
+    {
+        // A plain (non-#[Service]) class makes the SDK generator throw; the command reports it
+        // and exits non-zero while leaving the rest of the run intact.
+        config()->set('restate.services', [PlainClass::class]);
+        config()->set('restate.discover', null);
+        app()->forgetInstance(RestateManager::class);
+
+        $pending = $this->artisan('restate:codegen');
+        self::assertInstanceOf(PendingCommand::class, $pending);
+
+        $pending->expectsOutputToContain(PlainClass::class)->assertExitCode(1);
+    }
+
+    public function testUsesConfiguredNamespaceTrimmingSurroundingBackslashes(): void
+    {
+        $path = app_path('Restate/Clients/GreeterServiceClient.php');
+        File::delete($path);
+
+        config()->set('restate.codegen.namespace', '\\App\\Generated\\RestateClients\\');
+
+        $pending = $this->artisan('restate:codegen');
+        self::assertInstanceOf(PendingCommand::class, $pending);
+        self::assertSame(0, $pending->run());
+
+        self::assertFileExists($path);
+        self::assertStringContainsString('namespace App\\Generated\\RestateClients;', File::get($path));
     }
 
     public function testHonoursOutputAndNamespaceOptions(): void

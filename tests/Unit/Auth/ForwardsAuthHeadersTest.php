@@ -63,6 +63,59 @@ final class ForwardsAuthHeadersTest extends TestCase
         );
     }
 
+    public function testReducesAnIntegerTenantToItsStringForm(): void
+    {
+        Context::add('restate.tenant', 42);
+
+        self::assertSame(['x-restate-tenant' => '42'], $this->forwarder()->headers());
+    }
+
+    public function testReducesAnEloquentModelTenantToItsIntegerKey(): void
+    {
+        Context::add('restate.tenant', new FakeTenantModel(['id' => 99]));
+
+        self::assertSame(['x-restate-tenant' => '99'], $this->forwarder()->headers());
+    }
+
+    public function testReducesAnEloquentModelTenantToItsStringKey(): void
+    {
+        Context::add('restate.tenant', new FakeTenantModel(['id' => 'tenant-uuid']));
+
+        self::assertSame(['x-restate-tenant' => 'tenant-uuid'], $this->forwarder()->headers());
+    }
+
+    public function testForwardsNoTenantHeaderForAModelWithoutAScalarKey(): void
+    {
+        // A model whose key attribute is unset returns null from getKey(); nothing scalar to
+        // forward, so the tenant header is omitted entirely.
+        Context::add('restate.tenant', new FakeTenantModel());
+
+        self::assertSame([], $this->forwarder()->headers());
+    }
+
+    public function testReducesAStringableTenantToItsStringForm(): void
+    {
+        Context::add('restate.tenant', new StringableTenant('acme-stringable'));
+
+        self::assertSame(['x-restate-tenant' => 'acme-stringable'], $this->forwarder()->headers());
+    }
+
+    public function testForwardsNoTenantHeaderForANonScalarTenant(): void
+    {
+        // A float is neither a string/int, nor a Model, nor Stringable: not forwardable, so the
+        // tenant header is omitted rather than coerced.
+        Context::add('restate.tenant', 1.5);
+
+        self::assertSame([], $this->forwarder()->headers());
+    }
+
+    public function testForwardsNoTenantHeaderForAnEmptyStringTenant(): void
+    {
+        Context::add('restate.tenant', '');
+
+        self::assertSame([], $this->forwarder()->headers());
+    }
+
     private function forwarder(): ForwardsAuthHeaders
     {
         /** @var Application $app */
