@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Qcodr\Restate\Laravel\Console;
 
 use Illuminate\Console\Command;
+use Qcodr\Restate\Laravel\Logging\RestateLogger;
 use Qcodr\Restate\Laravel\RestateManager;
 use Qcodr\Restate\Sdk\Server\AmpStreamingServer;
 
@@ -48,7 +49,8 @@ final class ServeCommand extends Command
 
         $this->info("Serving Restate endpoint (amphp bidi) on http://{$host}:{$port}");
 
-        (new AmpStreamingServer($manager->endpoint()))->listen($host, $port, $workers);
+        (new AmpStreamingServer($manager->endpoint(), logger: app(RestateLogger::class)))
+            ->listen($host, $port, $workers);
 
         return self::SUCCESS;
     }

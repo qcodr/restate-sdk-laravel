@@ -95,4 +95,50 @@ return [
         'port' => (int) env('RESTATE_PORT', 9080),
         'workers' => (int) env('RESTATE_WORKERS', 1),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logging
+    |--------------------------------------------------------------------------
+    |
+    | The log channel handler logs (ctx->logger()) are written to. Null uses the
+    | default stack. Records emitted during replay are dropped by the SDK.
+    |
+    */
+    'logging' => [
+        'channel' => env('RESTATE_LOG_CHANNEL'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Codegen (`php artisan restate:codegen`)
+    |--------------------------------------------------------------------------
+    |
+    | Where typed clients for the bound services are generated. Defaults to
+    | app/Restate/Clients + App\Restate\Clients; override per project.
+    |
+    */
+    'codegen' => [
+        'output' => null,
+        'namespace' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auth / tenant propagation
+    |--------------------------------------------------------------------------
+    |
+    | Header names that carry the authenticated user / tenant across an invocation,
+    | plus how the inbound side resolves them (see Qcodr\Restate\Laravel\Auth). The
+    | `guard` must be stateful (session-style); a `tenant_resolver` is an optional
+    | callable / invokable class-string mapping the header value to a tenant.
+    |
+    */
+    'auth' => [
+        'user_header' => 'x-restate-user',
+        'tenant_header' => 'x-restate-tenant',
+        'guard' => null,
+        'tenant_context_key' => 'restate.tenant',
+        'tenant_resolver' => null,
+    ],
 ];

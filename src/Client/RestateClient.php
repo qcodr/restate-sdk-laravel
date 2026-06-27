@@ -76,15 +76,20 @@ final class RestateClient
      * @throws RestateRequestException                      on a non-2xx ingress response
      * @throws \Illuminate\Http\Client\ConnectionException  if the ingress is unreachable
      */
+    /**
+     * @param array<string, string>|null $headers extra request headers forwarded to the
+     *                                             ingress (e.g. auth/tenant propagation)
+     */
     public function call(
         string $service,
         string $handler,
         mixed $payload = null,
         ?string $key = null,
         ?string $idempotencyKey = null,
+        ?array $headers = null,
     ): mixed {
         $path = $this->invocationPath($service, $handler, $key);
-        $response = $this->dispatch($path, $payload, $idempotencyKey, null);
+        $response = $this->dispatch($path, $payload, $idempotencyKey, null, $headers);
 
         if (!$response->successful()) {
             throw RestateRequestException::forFailedRequest($path, $response->status(), $response->body());
@@ -107,6 +112,8 @@ final class RestateClient
      * @param string|null $key            object/workflow key, or null for an unkeyed Service
      * @param string|null $idempotencyKey opt-in dedupe key sent as `Idempotency-Key`
      * @param int|null    $delayMs        delay before execution, in milliseconds (null ⇒ now)
+     * @param array<string, string>|null $headers extra request headers forwarded to the
+     *                                             ingress (e.g. auth/tenant propagation)
      *
      * @return string the invocation id the ingress assigns (e.g. `inv_…`)
      *
@@ -121,9 +128,10 @@ final class RestateClient
         ?string $key = null,
         ?string $idempotencyKey = null,
         ?int $delayMs = null,
+        ?array $headers = null,
     ): string {
         $path = $this->invocationPath($service, $handler, $key) . self::SEND_SUFFIX;
-        $response = $this->dispatch($path, $payload, $idempotencyKey, $delayMs);
+        $response = $this->dispatch($path, $payload, $idempotencyKey, $delayMs, $headers);
 
         if (!$response->successful()) {
             throw RestateRequestException::forFailedRequest($path, $response->status(), $response->body());
@@ -144,12 +152,19 @@ final class RestateClient
      * base URL, optional bearer auth, optional idempotency and delay, and the JSON body. The
      * request is non-async, so {@see PendingRequest::post()} resolves to a {@see Response}.
      */
-    private function dispatch(string $path, mixed $payload, ?string $idempotencyKey, ?int $delayMs): Response
+    /**
+     * @param array<string, string>|null $headers
+     */
+    private function dispatch(string $path, mixed $payload, ?string $idempotencyKey, ?int $delayMs, ?array $headers = null): Response
     {
         $request = $this->http->baseUrl($this->baseUrl);
 
         if ($this->token !== null) {
             $request = $request->withToken($this->token);
+        }
+
+        if ($headers !== null && $headers !== []) {
+            $request = $request->withHeaders($headers);
         }
 
         if ($idempotencyKey !== null) {

@@ -180,6 +180,15 @@ recipes:
   / `assertSent(...)`, the `Bus::fake()` equivalent for Restate dispatches.
 - **[Generators & discovery](docs/usecases/discovery.md)** — `php artisan make:restate-service`
   (`-object`, `-workflow`) plus directory auto-discovery (config `discover`).
+- **[Typed clients](docs/usecases/codegen.md)** — `php artisan restate:codegen` generates an
+  IDE-autocompletable client per service (`GreeterClient::fromContext($ctx)->greet(...)`).
+- **[Scheduler](docs/usecases/scheduler.md)** — `Schedule::restate('Svc','handler', $payload)
+  ->dailyAt('03:00')` fires durable Restate invocations from Laravel's scheduler.
+- **[Observability](docs/usecases/observability.md)** — handler logs flow into Laravel's
+  logging stack (replay-aware), and an optional Telescope watcher tags ingress dispatches.
+- **[Auth & tenant](docs/usecases/auth.md)** — re-establish the authenticated user / tenant
+  inside a handler from the headers the runtime forwards (`withAuth`), and forward them on
+  outbound dispatches.
 
 > Several surface a real SDK boundary: `JsonSerde` hands handlers the **decoded array**, not
 > a hydrated object, so a handler's input parameter is `array`/scalar and the value object is

@@ -1,0 +1,6 @@
+# Boots the package's service provider for Testbench-based tooling (notably Larastan's
+# PHPStan bootstrap), so framework magic registered at boot — e.g. the Schedule::restate()
+# macro and the feature sub-providers — is resolvable during static analysis. PHPUnit does
+# not rely on this (each test registers its providers via getPackageProviders).
+providers:
+  - Qcodr\Restate\Laravel\RestateServiceProvider

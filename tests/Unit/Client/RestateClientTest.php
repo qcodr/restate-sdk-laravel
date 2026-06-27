@@ -120,6 +120,18 @@ final class RestateClientTest extends TestCase
         Http::assertSent(static fn (Request $request): bool => $request->hasHeader('Idempotency-Key', 'idem-key-1'));
     }
 
+    public function testForwardsCustomHeadersOnCallAndSend(): void
+    {
+        // Auth/tenant propagation rides on the optional $headers argument of call()/send().
+        Http::fake(['*' => Http::response(['invocationId' => 'inv_h', 'greeting' => 'hi'], 200)]);
+
+        $this->client()->call('GreeterService', 'greet', ['name' => 'world'], null, null, ['x-restate-user' => '42']);
+        $this->client()->send('OrderWorkflow', 'run', ['id' => 1], 'o-1', null, null, ['x-restate-tenant' => 'acme']);
+
+        Http::assertSent(static fn (Request $request): bool => $request->hasHeader('x-restate-user', '42'));
+        Http::assertSent(static fn (Request $request): bool => $request->hasHeader('x-restate-tenant', 'acme'));
+    }
+
     public function testSetsAuthorizationHeaderWhenTokenIsConfigured(): void
     {
         // Configure the ingress token, then drop the singletons the provider memoised at boot

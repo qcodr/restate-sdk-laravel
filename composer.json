@@ -25,6 +25,10 @@
         "phpunit/phpunit": "^11.0",
         "vimeo/psalm": "^6.0"
     },
+    "suggest": {
+        "amphp/http-server": "Required for `php artisan restate:serve` (the bidirectional HTTP/2 host).",
+        "laravel/telescope": "Surface Restate ingress dispatches in Telescope via the RestateWatcher."
+    },
     "autoload": {
         "psr-4": {
             "Qcodr\\Restate\\Laravel\\": "src/"

@@ -7,6 +7,7 @@ namespace Qcodr\Restate\Laravel;
 use Illuminate\Contracts\Container\Container;
 use Qcodr\Restate\Laravel\Client\RestateClient;
 use Qcodr\Restate\Laravel\Discovery\ServiceScanner;
+use Qcodr\Restate\Laravel\Logging\RestateLogger;
 use Qcodr\Restate\Sdk\Endpoint\Endpoint;
 use Qcodr\Restate\Sdk\Endpoint\ProtocolMode;
 use Qcodr\Restate\Sdk\Endpoint\RequestProcessor;
@@ -102,7 +103,12 @@ final class RestateManager
      */
     public function processor(): RequestProcessor
     {
-        return new RequestProcessor($this->endpoint());
+        // Feed Laravel's logger (replay-aware via the SDK's ReplayAwareLogger) so handler
+        // logs land in the app's channels exactly once.
+        return new RequestProcessor(
+            $this->endpoint(),
+            logger: $this->container->make(RestateLogger::class),
+        );
     }
 
     /**
