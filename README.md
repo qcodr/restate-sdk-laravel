@@ -29,9 +29,7 @@ or per-entity-stateful work:
 ## Requirements
 
 - PHP **8.2+**
-- Laravel **11**, **12**, or **13** (Laravel 11 is past security support — composer 2.10+'s
-  advisory policy blocks its framework range, so install it with an older composer or an
-  advisory override; CI covers it on composer 2.8)
+- Laravel **12** or **13**
 - [`qcodr/restate-sdk-php`](https://github.com/qcodr/restate-sdk-php) (pulled in automatically)
 - `amphp/http-server` only if you use `php artisan restate:serve` (bidi)
 
